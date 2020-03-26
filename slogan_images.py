@@ -75,7 +75,7 @@ def create_slogan_images(slogan_dicts):
 
 def validate_input(slogan_dicts):
     errors = []
-
+    valid_slogans = []
     for slogan in slogan_dicts:
         error_obj = {
             "row": int,
@@ -83,15 +83,15 @@ def validate_input(slogan_dicts):
             "error": ["error 1", "error n"]
         }
 
-        error_obj["row"] = slogan_dicts.index(slogan)
+        error_obj["row"] = slogan_dicts.index(slogan) + 2
         error_obj["error"] = []
 
         # Check font
         font_map = {
             "abril": {"max_chars": 12, "max_lines": 4},
             "amatic": {"max_chars": 14, "max_lines": 4},
-            "amatic-bold": {"max_chars": 14, "max_lines": 4},
-            "helvetica": {"max_chars": 12, "max_lines": 4}
+            "amatic-bold": {"max_chars": 14, "max_lines": 5},
+            "helvetica": {"max_chars": 12, "max_lines": 5}
         }
         try:
             if not slogan["font"]:
@@ -122,12 +122,38 @@ def validate_input(slogan_dicts):
             except TypeError:
                 error_obj["error_count"] = 1
 
+        # Check num of lines when wrapped
+        slogan["wrapped"] = wrap(slogan["slogan"], width=slogan["max_chars"])
+        num_of_lines = len(slogan["wrapped"])
+        if num_of_lines > slogan["max_lines"]:
+            error_obj["error"].append(f"Too many lines.  Make the slogan shorter")  # noqa:E501
+            try:
+                error_obj["error_count"] += 1
+            except TypeError:
+                error_obj["error_count"] = 1
+
         # Append to `errors` list if any present
         errors_present = type(error_obj["error_count"]) is int
         if errors_present:
+            # convert errors to one string
+            error_str = ""
+            for idx, error in enumerate(error_obj["error"]):
+                idx += 1
+                new_str = f"#{idx} - {error} "
+                error_str += new_str
+            error_obj["error"] = error_str
             errors.append(error_obj)
-    set_trace()
+        else:
+            valid_slogans.append(slogan)
+
     # output csv with errors lists
+    keys = errors[0].keys()
+    with open("slogan_errors.csv", "w") as error_output:
+        dict_writer = csv.DictWriter(error_output, keys)
+        dict_writer.writeheader()
+        dict_writer.writerows(errors)
+
+    return valid_slogans
 
 
 if __name__ == "__main__":
@@ -146,5 +172,6 @@ if __name__ == "__main__":
         reader = csv.DictReader(csv_file)
         slogan_dicts = [row for row in reader]
 
-    validated_slogan_dicts = validate_input(slogan_dicts)
-    create_slogan_images(validated_slogan_dicts)
+    valid_slogan_dicts = validate_input(slogan_dicts)
+    set_trace()
+    create_slogan_images(valid_slogan_dicts)
