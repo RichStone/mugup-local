@@ -119,11 +119,12 @@ def validate_input(slogan_dicts):
             valid_slogans.append(slogan)
 
     # output csv with errors lists
-    keys = errors[0].keys()
-    with open("slogan_errors.csv", "w") as error_output:
-        dict_writer = csv.DictWriter(error_output, keys)
-        dict_writer.writeheader()
-        dict_writer.writerows(errors)
+    if len(errors) > 0:
+        keys = errors[0].keys()
+        with open("slogan_errors.csv", "w") as error_output:
+            dict_writer = csv.DictWriter(error_output, keys)
+            dict_writer.writeheader()
+            dict_writer.writerows(errors)
 
     return valid_slogans
 
