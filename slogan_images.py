@@ -73,6 +73,38 @@ def create_slogan_images(slogan_dicts):
     create_slogan_drawings(slogan_objs)
 
 
+def validate_input(slogan_dicts):
+    errors = []
+
+    for slogan in slogan_dicts:
+        error_obj = {
+            "row": int,
+            "error_count": int,
+            "error": ["error 1", "error n"]
+        }
+
+        error_obj["row"] = slogan_dicts.index(slogan)
+        font_map = {
+            "abril": {"max_chars": 12, "max_lines": 4},
+            "amatic": {"max_chars": 14, "max_lines": 4},
+            "amatic-bold": {"max_chars": 14, "max_lines": 4},
+            "helvetica": {"max_chars": 12, "max_lines": 4}
+        }
+        try:
+            limits_dict = font_map[slogan["font"]]
+        except KeyError:
+            error_obj["error"] = ["Font not found. Options are abril, amatic, amatic-bold, helvetica.  Check for spaces"]  # noqa: E501
+            try:
+                error_obj["error_count"] += 1
+            except TypeError:
+                error_obj["error_count"] = 1
+
+        if type(error_obj["error_count"]) is int:
+            errors.append(error_obj)
+    set_trace()
+    # output csv with errors lists
+
+
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument(
@@ -89,4 +121,5 @@ if __name__ == "__main__":
         reader = csv.DictReader(csv_file)
         slogan_dicts = [row for row in reader]
 
+    validate_input(slogan_dicts)
     create_slogan_images(slogan_dicts)
