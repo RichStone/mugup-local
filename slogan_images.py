@@ -91,6 +91,9 @@ def validate_input(slogan_dicts):
             "helvetica": {"max_chars": 12, "max_lines": 4}
         }
         try:
+            set_trace()
+            if "font" not in slogan:
+                slogan["font"] = "abril"
             limits_dict = font_map[slogan["font"]]
         except KeyError:
             error_obj["error"] = ["Font not found. Options are abril, amatic, amatic-bold, helvetica.  Check for spaces"]  # noqa: E501
