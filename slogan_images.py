@@ -84,6 +84,9 @@ def validate_input(slogan_dicts):
         }
 
         error_obj["row"] = slogan_dicts.index(slogan)
+        error_obj["error"] = []
+
+        # Check font
         font_map = {
             "abril": {"max_chars": 12, "max_lines": 4},
             "amatic": {"max_chars": 14, "max_lines": 4},
@@ -91,18 +94,37 @@ def validate_input(slogan_dicts):
             "helvetica": {"max_chars": 12, "max_lines": 4}
         }
         try:
-            set_trace()
-            if "font" not in slogan:
+            if not slogan["font"]:
                 slogan["font"] = "abril"
             limits_dict = font_map[slogan["font"]]
+            slogan["max_chars"] = limits_dict["max_chars"]
+            slogan["max_lines"] = limits_dict["max_lines"]
         except KeyError:
-            error_obj["error"] = ["Font not found. Options are abril, amatic, amatic-bold, helvetica.  Check for spaces"]  # noqa: E501
+            error_obj["error"].append("Font not found. Options are abril, amatic, amatic-bold, helvetica.  Check for spaces")  # noqa: E501
+            slogan["max_chars"] = 14
+            slogan["max_lines"] = 4
             try:
                 error_obj["error_count"] += 1
             except TypeError:
                 error_obj["error_count"] = 1
 
-        if type(error_obj["error_count"]) is int:
+        # Check word length < max_chars
+        individual_words = slogan["slogan"].split()
+        words_exceeding_char_limit = 0
+        for word in individual_words:
+            word_len = len(word)
+            if word_len > slogan["max_chars"]:
+                words_exceeding_char_limit += 1
+        if words_exceeding_char_limit > 0:
+            error_obj["error"].append(f"{words_exceeding_char_limit} word(s) exceed(s) character limit.  Must be less than chars {slogan['max_chars']} for this font")  # noqa:E501
+            try:
+                error_obj["error_count"] += 1
+            except TypeError:
+                error_obj["error_count"] = 1
+
+        # Append to `errors` list if any present
+        errors_present = type(error_obj["error_count"]) is int
+        if errors_present:
             errors.append(error_obj)
     set_trace()
     # output csv with errors lists
@@ -124,5 +146,5 @@ if __name__ == "__main__":
         reader = csv.DictReader(csv_file)
         slogan_dicts = [row for row in reader]
 
-    validate_input(slogan_dicts)
-    create_slogan_images(slogan_dicts)
+    validated_slogan_dicts = validate_input(slogan_dicts)
+    create_slogan_images(validated_slogan_dicts)
