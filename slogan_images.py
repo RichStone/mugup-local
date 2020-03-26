@@ -7,19 +7,6 @@ from textwrap import wrap
 import sys
 
 
-class Slogan():
-    def __init__(self, *, name, slogan, niche, font):
-        self.name = name
-        self.valid_slogan = None
-        self.slogan = slogan
-        self.wrapped = wrap(slogan, width=9)
-        self.niche = niche
-        self.font = font.lower()
-
-    def __repr__(self):
-        return self.name
-
-
 def create_slogan_images(slogan_dicts):
     def create_slogan_drawings(slogan_dicts):
         for slogan in slogan_dicts:
