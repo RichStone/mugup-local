@@ -2,7 +2,6 @@ import argparse
 import csv
 from datetime import date
 from pathlib import Path
-from pdb import set_trace
 from PIL import Image, ImageDraw, ImageFont
 from textwrap import wrap
 import sys
@@ -13,7 +12,7 @@ class Slogan():
         self.name = name
         self.valid_slogan = None
         self.slogan = slogan
-        self.wrapped = wrap(slogan, width=14)
+        self.wrapped = wrap(slogan, width=9)
         self.niche = niche
         self.font = font.lower()
 
@@ -22,29 +21,8 @@ class Slogan():
 
 
 def create_slogan_images(slogan_dicts):
-    def standardize_whitespace(string):
-        string_split = string.split()
-        return " ".join(string_split)
-
-    def create_slogan_objects(slogan_list):
-        today = date.today().strftime("%Y%m%d")
-        slogan_objs = []
-        for slogan in slogan_list:
-            niche = standardize_whitespace(slogan["niche"])
-            niche = niche.replace(" ", "-").lower()
-            name = f"{slogan_list.index(slogan)}_{today}_{niche}"
-            slogan_objs.append(
-                Slogan(
-                    name=name,
-                    slogan=slogan["slogan"],
-                    niche=slogan["niche"],
-                    font=slogan["font"]
-                )
-            )
-        return slogan_objs
-
-    def create_slogan_drawings(slogan_objs):
-        for slogan in slogan_objs:
+    def create_slogan_drawings(slogan_dicts):
+        for slogan in slogan_dicts:
             MAX_W, MAX_H = 1000, 915
             img = Image.new("RGB", (MAX_W, MAX_H), (255, 255, 255))
             draw = ImageDraw.Draw(img)
@@ -53,37 +31,44 @@ def create_slogan_images(slogan_dicts):
             # Windows conversion problem in font paths but PIL
             # doesn't accept `Path` obj
             font_map = {
-                "abril": ["fonts/AbrilFatface-Regular.otf", 108],
-                "amatic": ["fonts/AmaticSC-Regular.ttf", 220],
+                "abril": ["fonts/AbrilFatface-Regular.otf", 155],
+                "amatic": ["fonts/AmaticSC-Regular.ttf", 215],
                 "amatic-bold": ["fonts/Amatic-Bold.ttf", 220],
-                "helvetica": ["fonts/Helvetica.otf", 110]
+                "helvetica": ["fonts/Helvetica.otf", 170]
             }
-            font = ImageFont.truetype(*font_map[slogan.font])
+            font = ImageFont.truetype(*font_map[slogan["font"]])
 
             current_h, pad = 0, 0
-            for line in slogan.wrapped:
+            for line in slogan["wrapped"]:
                 w, h = draw.textsize(line, font=font)
                 draw.text(((MAX_W - w) / 2, current_h), line, font=font, fill=(0, 0, 0))
                 current_h += h + pad
 
-            out_file = Path(f"finished/{slogan.name}.png")
+            out_file = Path(f"finished/{slogan['name']}.png")
             img.save(out_file)
 
-    slogan_objs = create_slogan_objects(slogan_dicts)
-    create_slogan_drawings(slogan_objs)
+    create_slogan_drawings(slogan_dicts)
 
 
 def validate_input(slogan_dicts):
+    def clean_whitespace(string):
+        string_split = string.split()
+        return " ".join(string_split)
+    today = date.today().strftime("%Y%m%d")
     errors = []
     valid_slogans = []
     for slogan in slogan_dicts:
+        slogan["slogan"] = clean_whitespace(slogan["slogan"])
+        slogan["niche"] = clean_whitespace(slogan["niche"]).replace(" ", "-").lower()
+        slogan["row"] = slogan_dicts.index(slogan) + 2
+        slogan["name"] = f"{slogan_dicts.index(slogan)}_{today}_{slogan['niche']}"
         error_obj = {
             "row": int,
             "error_count": int,
             "error": ["error 1", "error n"]
         }
 
-        error_obj["row"] = slogan_dicts.index(slogan) + 2
+        error_obj["row"] = slogan["row"]
         error_obj["error"] = []
 
         # Check font
@@ -173,5 +158,4 @@ if __name__ == "__main__":
         slogan_dicts = [row for row in reader]
 
     valid_slogan_dicts = validate_input(slogan_dicts)
-    set_trace()
     create_slogan_images(valid_slogan_dicts)
