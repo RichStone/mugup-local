@@ -25,11 +25,17 @@ def create_slogan_images(slogan_dicts):
             }
             font = ImageFont.truetype(*font_map[slogan["font"]])
 
-            current_h, pad = 0, 0
+            slogan_lines = slogan["wrapped"]
+
+            std_w, std_h = draw.textsize(slogan_lines[0], font=font)
+            text_h = len(slogan_lines) * std_h
+            starting_h = (MAX_H - text_h) / 2
+            current_h = starting_h - 60
+
             for line in slogan["wrapped"]:
                 w, h = draw.textsize(line, font=font)
                 draw.text(((MAX_W - w) / 2, current_h), line, font=font, fill=(0, 0, 0))
-                current_h += h + pad
+                current_h += std_h
 
             out_file = Path(f"finished/{slogan['name']}.png")
             img.save(out_file)
@@ -145,5 +151,5 @@ if __name__ == "__main__":
         reader = csv.DictReader(csv_file)
         slogan_dicts = [row for row in reader]
 
-    valid_slogan_dicts = validate_input(slogan_dicts)
+    valid_slogan_dicts = validate_input(slogan_dicts[:5])
     create_slogan_images(valid_slogan_dicts)
