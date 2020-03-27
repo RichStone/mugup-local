@@ -13,6 +13,7 @@ from pathlib import Path
 from PIL import Image
 from progressbar import progressbar
 from shutil import rmtree
+from sys import platform
 
 
 async def main(*, infolder, bucket):
@@ -25,7 +26,10 @@ async def main(*, infolder, bucket):
         in 3200 x 1050 format to be ready for upload to Printful.
         """
         def render_mockup_ready_slogan_image(img_name):
-            img_no_folder = img_name.replace(f"{infolder}/", "")
+            if platform == "darwin":
+                img_no_folder = img_name.replace(f"{infolder}/", "")
+            elif platform == "win32":
+                img_no_folder = img_name.replace(f"{infolder}\\", "")
             img_name_no_extension = img_no_folder.split(".png")[0]
             img = Image.open(img_name, "r")
             background = Image.new("RGBA", (2500, 1050), (255, 255, 255, 255))
@@ -33,7 +37,7 @@ async def main(*, infolder, bucket):
             background.paste(img, (1440, 105))
             new_img_name = f"{img_name_no_extension}_r.png"
 
-            new_img_path = f"{write_directory}/{new_img_name}"
+            new_img_path = Path(f"{write_directory}/{new_img_name}")
             background.save(new_img_path)
             return new_img_path
 
@@ -53,7 +57,10 @@ async def main(*, infolder, bucket):
         for img in progressbar(img_list):
             try:
                 new_img_path = render_mockup_ready_slogan_image(img)
-                new_img_name = new_img_path.split("/")[-1]
+                if platform == "win32":
+                    new_img_name = str(new_img_path).split("\\")[-1]
+                elif platform == "darwin":
+                    new_img_name = str(new_img_path).split("/")[-1]
                 s3_img_path = f"{today_str}/{new_img_name}"
                 with open(new_img_path, "rb") as f:
                     s3.upload_fileobj(f, bucket, s3_img_path)
@@ -248,13 +255,19 @@ async def main(*, infolder, bucket):
 
         return mockup_urls_dict
 
-    img_list = glob(os.path.join(infolder, "*"))
+    img_list_initial = glob(os.path.join(infolder, "*"))
+    if platform == "win32":
+        img_list = []
+        for img_str in img_list_initial:
+            updated_img_str = img_str.replace("\\\\", "\\")
+            img_list.append(updated_img_str)
+    elif platform == "darwin":
+        img_list = img_list_initial
 
     print(f"Render slogan files and upload to S3 bucket {bucket}")
     img_urls = render_multiple_mockups(
         img_list=img_list,
         infolder=infolder,
-        bucket=bucket
     )
 
     print("Render Printful mockups")
@@ -293,7 +306,7 @@ async def main(*, infolder, bucket):
 
     print("Write mockup URLs to csv")
     keys = formatted_dicts[0].keys()
-    with open("image_urls.csv", "w") as output_file:
+    with open("image_urls.csv", "w", newline="") as output_file:
         dict_writer = csv.DictWriter(output_file, keys)
         dict_writer.writeheader()
         dict_writer.writerows(formatted_dicts)

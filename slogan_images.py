@@ -17,12 +17,20 @@ def create_slogan_images(slogan_dicts):
             # font_map {corresponds to slogan.font, [path, size]}
             # Windows conversion problem in font paths but PIL
             # doesn't accept `Path` obj
-            font_map = {
-                "abril": ["fonts/AbrilFatface-Regular.otf", 155],
-                "amatic": ["fonts/AmaticSC-Regular.ttf", 215],
-                "amatic-bold": ["fonts/Amatic-Bold.ttf", 220],
-                "helvetica": ["fonts/Helvetica.otf", 170]
-            }
+            if sys.platform == "win32":
+                font_map = {
+                    "abril": ["fonts\\AbrilFatface-Regular.otf", 155],
+                    "amatic": ["fonts\\AmaticSC-Regular.ttf", 215],
+                    "amatic-bold": ["fonts\\Amatic-Bold.ttf", 220],
+                    "helvetica": ["fonts\\Helvetica.otf", 170]
+                }
+            elif sys.platform == "darwin":
+                font_map = {
+                    "abril": ["fonts/AbrilFatface-Regular.otf", 155],
+                    "amatic": ["fonts/AmaticSC-Regular.ttf", 215],
+                    "amatic-bold": ["fonts/Amatic-Bold.ttf", 220],
+                    "helvetica": ["fonts/Helvetica.otf", 170]
+                }
             font = ImageFont.truetype(*font_map[slogan["font"]])
 
             slogan_lines = slogan["wrapped"]
@@ -54,7 +62,7 @@ def validate_input(slogan_dicts):
         slogan["slogan"] = clean_whitespace(slogan["slogan"])
         slogan["niche"] = clean_whitespace(slogan["niche"]).replace(" ", "-").lower()
         slogan["row"] = slogan_dicts.index(slogan) + 2
-        slogan["name"] = f"{slogan_dicts.index(slogan)}_{today}_{slogan['niche']}"
+        slogan["name"] = f"{slogan['niche']}_{slogan_dicts.index(slogan)}_{today}"
         error_obj = {
             "row": int,
             "error_count": int,
