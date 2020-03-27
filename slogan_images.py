@@ -151,5 +151,5 @@ if __name__ == "__main__":
         reader = csv.DictReader(csv_file)
         slogan_dicts = [row for row in reader]
 
-    valid_slogan_dicts = validate_input(slogan_dicts[:5])
+    valid_slogan_dicts = validate_input(slogan_dicts)
     create_slogan_images(valid_slogan_dicts)
