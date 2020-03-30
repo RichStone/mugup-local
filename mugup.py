@@ -4,6 +4,7 @@ import csv
 from pathlib import Path
 from slogan_images import validate_input, create_slogan_images
 import render_mockups
+from shutil import rmtree
 import sys
 
 
@@ -23,6 +24,7 @@ if __name__ == "__main__":
         reader = csv.DictReader(csv_file)
         slogan_dicts = [row for row in reader]
 
+    Path("finished").mkdir(parents=True, exist_ok=True)
     valid_slogan_dicts = validate_input(slogan_dicts)
     slogans_with_path = create_slogan_images(valid_slogan_dicts)
     asyncio.run(
@@ -32,3 +34,5 @@ if __name__ == "__main__":
             slogan_inputs=slogans_with_path
         )
     )
+
+    rmtree(Path("finished"))

@@ -299,7 +299,7 @@ async def main(*, infolder, bucket, slogan_inputs):
 
     print("Format dict for csv printing")
     formatted_dicts = []
-    today_str = str(date.today())
+    today_str = date.today().strftime("%Y%m%d")
 
     for i, img_dict in progressbar(enumerate(img_dicts_with_crop)):
         slogan_dict = match_slogan_input_with_image(img_dict, slogan_inputs)
