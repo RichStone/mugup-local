@@ -9,6 +9,7 @@ import sys
 
 def create_slogan_images(slogan_dicts):
     def create_slogan_drawings(slogan_dicts):
+        slogans_with_path = []
         for slogan in slogan_dicts:
             MAX_W, MAX_H = 1000, 915
             img = Image.new("RGB", (MAX_W, MAX_H), (255, 255, 255))
@@ -45,10 +46,14 @@ def create_slogan_images(slogan_dicts):
                 draw.text(((MAX_W - w) / 2, current_h), line, font=font, fill=(0, 0, 0))
                 current_h += std_h
 
-            out_file = Path(f"finished/{slogan['name']}.png")
-            img.save(out_file)
+            slogan_path = Path(f"finished/{slogan['name']}.png")
+            img.save(slogan_path)
+            slogan["slogan_path"] = slogan_path
+            slogans_with_path.append(slogan)
 
-    create_slogan_drawings(slogan_dicts)
+        return slogans_with_path
+
+    return create_slogan_drawings(slogan_dicts)
 
 
 def validate_input(slogan_dicts):

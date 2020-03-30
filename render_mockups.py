@@ -16,11 +16,11 @@ from shutil import rmtree
 from sys import platform
 
 
-async def main(*, infolder, bucket):
+async def main(*, infolder, bucket, slogan_inputs):
     AWS_ACCESS_KEY_ID = "AKIAINCEUCJHE3FHXWBQ"
     AWS_SECRET_ACCESS_KEY = "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"
 
-    def render_multiple_mockups(*, img_list, infolder):
+    def render_multiple_mockups(img_list):
         """
         Given a list of PNG images, renders and exports those images
         in 3200 x 1050 format to be ready for upload to Printful.
@@ -35,7 +35,7 @@ async def main(*, infolder, bucket):
             background = Image.new("RGBA", (2500, 1050), (255, 255, 255, 255))
             background.paste(img, (70, 105))
             background.paste(img, (1440, 105))
-            new_img_name = f"{img_name_no_extension}_r.png"
+            new_img_name = f"{img_name_no_extension}.png"
 
             new_img_path = Path(f"{write_directory}/{new_img_name}")
             background.save(new_img_path)
@@ -255,6 +255,17 @@ async def main(*, infolder, bucket):
 
         return mockup_urls_dict
 
+    def match_slogan_input_with_image(img_dict, slogan_inputs):
+        for i, slogan_dict in enumerate(slogan_inputs):
+            if slogan_dict["name"] == img_dict["name"]:
+                matched_slogan_row = i
+                break
+        try:
+            matched_slogan_dict = slogan_inputs[matched_slogan_row]
+            return matched_slogan_dict
+        except NameError:
+            pdb.set_trace()
+
     img_list_initial = glob(os.path.join(infolder, "*"))
     if platform == "win32":
         img_list = []
@@ -265,10 +276,7 @@ async def main(*, infolder, bucket):
         img_list = img_list_initial
 
     print(f"Render slogan files and upload to S3 bucket {bucket}")
-    img_urls = render_multiple_mockups(
-        img_list=img_list,
-        infolder=infolder,
-    )
+    img_urls = render_multiple_mockups(img_list)
 
     print("Render Printful mockups")
     pool = AioPool(size=3)
@@ -291,9 +299,20 @@ async def main(*, infolder, bucket):
 
     print("Format dict for csv printing")
     formatted_dicts = []
-    for img_dict in progressbar(img_dicts_with_crop):
-        formatted_dict = {}
+    today_str = str(date.today())
 
+    for i, img_dict in progressbar(enumerate(img_dicts_with_crop)):
+        slogan_dict = match_slogan_input_with_image(img_dict, slogan_inputs)
+        formatted_dict = {}
+        formatted_dict["feed_product_type"] = "kitchen"
+        formatted_dict["item_sku"] = f"{today_str}-{i}"
+        formatted_dict["brand_name"] = "Gifts on Demand"
+        formatted_dict["item_name"] = slogan_dict["item_name"]
+        formatted_dict["external_product_id"] = ""
+        formatted_dict["external_product_id_type"] = "UPC"
+        formatted_dict["item_type"] = "novelty-coffee-mugs"
+        formatted_dict["standard_price"] = 19.95
+        formatted_dict["quantity"] = 99
         formatted_dict["main-image-url"] = img_dict["left_url_cropped"]
         formatted_dict["other-image-url1"] = img_dict["right_url_cropped"]
         formatted_dict["other-image-url2"] = img_dict["on_board_url"]
@@ -301,12 +320,209 @@ async def main(*, infolder, bucket):
         formatted_dict["other-image-url4"] = img_dict["pen_example_url"]
         formatted_dict["other-image-url5"] = img_dict["microwave_safe_url"]
         formatted_dict["other-image-url6"] = img_dict["four_fingers_example"]
+        formatted_dict["other-image-url7"] = ""
+        formatted_dict["other-image-url8"] = ""
+        formatted_dict["swatch-image-url"] = ""
+        formatted_dict["parent_child"] = ""
+        formatted_dict["parent_sku"] = ""
+        formatted_dict["relationship_type"] = ""
+        formatted_dict["variation_theme"] = ""
+        formatted_dict["update_delete"] = ""
+        formatted_dict["product_description"] = ""
+        formatted_dict["manufacturer"] = ""
+        formatted_dict["part_number"] = ""
+        formatted_dict["model"] = ""
+        formatted_dict["closure_type"] = ""
+        formatted_dict["bullet_point1"] = "High quality mug makes the perfect gift for everyone."  # noqa:E501
+        formatted_dict["bullet_point2"] = "Printed on only the highest quality mugs. The print will never fade no matter how many times it is washed."  # noqa:E501
+        formatted_dict["bullet_point3"] = "Packaged, and shipped from the USA."
+        formatted_dict["bullet_point4"] = "Dishwasher and Microwave safe."
+        formatted_dict["bullet_point5"] = "Shipped in a custom made styrofoam package to ensure it arrives perfect. GUARANTEED."  # noqa:E501
+        formatted_dict["target_audience_base"] = ""
+        formatted_dict["catalog_number"] = ""
+        formatted_dict["specific_uses_keywords1"] = ""
+        formatted_dict["specific_uses_keywords2"] = ""
+        formatted_dict["specific_uses_keywords3"] = ""
+        formatted_dict["specific_uses_keywords4"] = ""
+        formatted_dict["specific_uses_keywords5"] = ""
+        formatted_dict["target_audience_keywords1"] = ""
+        formatted_dict["target_audience_keywords2"] = ""
+        formatted_dict["target_audience_keywords3"] = ""
+        formatted_dict["thesaurus_attribute_keywords1"] = ""
+        formatted_dict["thesaurus_attribute_keywords2"] = ""
+        formatted_dict["thesaurus_attribute_keywords3"] = ""
+        formatted_dict["thesaurus_attribute_keywords4"] = ""
+        formatted_dict["thesaurus_subject_keywords1"] = ""
+        formatted_dict["thesaurus_subject_keywords2"] = ""
+        formatted_dict["thesaurus_subject_keywords3"] = ""
+        formatted_dict["generic_keywords"] = slogan_dict["keywords"]
+        formatted_dict["platinum_keywords1"] = ""
+        formatted_dict["platinum_keywords2"] = ""
+        formatted_dict["platinum_keywords3"] = ""
+        formatted_dict["platinum_keywords4"] = ""
+        formatted_dict["platinum_keywords5"] = ""
+        formatted_dict["country_as_labeled"] = ""
+        formatted_dict["fur_description"] = ""
+        formatted_dict["occasion"] = ""
+        formatted_dict["number_of_pieces"] = ""
+        formatted_dict["scent_name"] = ""
+        formatted_dict["included_components"] = ""
+        formatted_dict["color_name"] = "white"
+        formatted_dict["color_map"] = ""
+        formatted_dict["size_name"] = ""
+        formatted_dict["material_type"] = ""
+        formatted_dict["style_name"] = ""
+        formatted_dict["power_source_type"] = ""
+        formatted_dict["wattage"] = ""
+        formatted_dict["special_features1"] = ""
+        formatted_dict["special_features2"] = ""
+        formatted_dict["special_features3"] = ""
+        formatted_dict["special_features4"] = ""
+        formatted_dict["special_features5"] = ""
+        formatted_dict["pattern_name"] = ""
+        formatted_dict["lithium_battery_voltage"] = ""
+        formatted_dict["compatible_devices1"] = ""
+        formatted_dict["compatible_devices2"] = ""
+        formatted_dict["compatible_devices3"] = ""
+        formatted_dict["compatible_devices4"] = ""
+        formatted_dict["compatible_devices5"] = ""
+        formatted_dict["compatible_devices6"] = ""
+        formatted_dict["compatible_devices7"] = ""
+        formatted_dict["compatible_devices8"] = ""
+        formatted_dict["compatible_devices9"] = ""
+        formatted_dict["compatible_devices10"] = ""
+        formatted_dict["wattage_unit_of_measure"] = ""
+        formatted_dict["included_features"] = ""
+        formatted_dict["lithium_battery_voltage_unit_of_measure"] = ""
+        formatted_dict["length_range"] = ""
+        formatted_dict["shaft_style_type"] = ""
+        formatted_dict["specification_met"] = ""
+        formatted_dict["breed_recommendation"] = ""
+        formatted_dict["directions"] = ""
+        formatted_dict["number_of_sets"] = ""
+        formatted_dict["blade_edge_type"] = ""
+        formatted_dict["blade_material_type"] = ""
+        formatted_dict["material_composition"] = ""
+        formatted_dict["mfg_maximum"] = ""
+        formatted_dict["mfg_minimum"] = ""
+        formatted_dict["website_shipping_weight"] = ""
+        formatted_dict["website_shipping_weight_unit_of_measure"] = ""
+        formatted_dict["item_shape"] = ""
+        formatted_dict["item_display_length_unit_of_measure"] = ""
+        formatted_dict["item_display_width_unit_of_measure"] = ""
+        formatted_dict["item_display_height_unit_of_measure"] = ""
+        formatted_dict["item_display_length"] = ""
+        formatted_dict["item_display_width"] = ""
+        formatted_dict["item_display_depth"] = ""
+        formatted_dict["item_display_height"] = ""
+        formatted_dict["item_display_diameter"] = ""
+        formatted_dict["item_display_weight"] = ""
+        formatted_dict["item_display_weight_unit_of_measure"] = ""
+        formatted_dict["volume_capacity_name"] = 11
+        formatted_dict["volume_capacity_name_unit_of_measure"] = "ounces"
+        formatted_dict["item_height"] = ""
+        formatted_dict["item_length"] = ""
+        formatted_dict["item_width"] = ""
+        formatted_dict["size_map"] = ""
+        formatted_dict["weight_recommendation_unit_of_measure"] = ""
+        formatted_dict["width_range"] = ""
+        formatted_dict["maximum_weight_recommendation"] = ""
+        formatted_dict["item_dimensions_unit_of_measure"] = ""
+        formatted_dict["fulfillment_center_id"] = ""
+        formatted_dict["package_height"] = ""
+        formatted_dict["package_width"] = ""
+        formatted_dict["package_length"] = ""
+        formatted_dict["package_dimensions_unit_of_measure"] = ""
+        formatted_dict["package_weight"] = ""
+        formatted_dict["package_weight_unit_of_measure"] = ""
+        formatted_dict["energy_efficiency_image_url"] = ""
+        formatted_dict["warranty_description"] = ""
+        formatted_dict["cpsia_cautionary_statement"] = ""
+        formatted_dict["cpsia_cautionary_description"] = ""
+        formatted_dict["fabric_type"] = ""
+        formatted_dict["import_designation"] = ""
+        formatted_dict["legal_compliance_certification_metadata"] = ""
+        formatted_dict["legal_compliance_certification_expiration_date"] = ""
+        formatted_dict["item_volume"] = ""
+        formatted_dict["item_volume_unit_of_measure"] = ""
+        formatted_dict["specific_uses_for_product"] = ""
+        formatted_dict["country_string"] = ""
+        formatted_dict["country_of_origin"] = ""
+        formatted_dict["legal_disclaimer_description"] = ""
+        formatted_dict["usda_hardiness_zone1"] = ""
+        formatted_dict["usda_hardiness_zone2"] = ""
+        formatted_dict["are_batteries_included"] = ""
+        formatted_dict["item_weight"] = ""
+        formatted_dict["batteries_required"] = ""
+        formatted_dict["battery_type1"] = ""
+        formatted_dict["battery_type2"] = ""
+        formatted_dict["battery_type3"] = ""
+        formatted_dict["item_weight_unit_of_measure"] = ""
+        formatted_dict["number_of_batteries1"] = ""
+        formatted_dict["number_of_batteries2"] = ""
+        formatted_dict["number_of_batteries3"] = ""
+        formatted_dict["lithium_battery_energy_content"] = ""
+        formatted_dict["lithium_battery_packaging"] = ""
+        formatted_dict["lithium_battery_weight"] = ""
+        formatted_dict["number_of_lithium_ion_cells"] = ""
+        formatted_dict["number_of_lithium_metal_cells"] = ""
+        formatted_dict["battery_cell_composition"] = ""
+        formatted_dict["battery_weight"] = ""
+        formatted_dict["battery_weight_unit_of_measure"] = ""
+        formatted_dict["lithium_battery_energy_content_unit_of_measure"] = ""
+        formatted_dict["lithium_battery_weight_unit_of_measure"] = ""
+        formatted_dict["supplier_declared_dg_hz_regulation1"] = ""
+        formatted_dict["supplier_declared_dg_hz_regulation2"] = ""
+        formatted_dict["supplier_declared_dg_hz_regulation3"] = ""
+        formatted_dict["supplier_declared_dg_hz_regulation4"] = ""
+        formatted_dict["supplier_declared_dg_hz_regulation5"] = ""
+        formatted_dict["hazmat_united_nations_regulatory_id"] = ""
+        formatted_dict["safety_data_sheet_url"] = ""
+        formatted_dict["lighting_facts_image_url"] = ""
+        formatted_dict["flash_point"] = ""
+        formatted_dict["external_testing_certification1"] = ""
+        formatted_dict["external_testing_certification2"] = ""
+        formatted_dict["external_testing_certification3"] = ""
+        formatted_dict["external_testing_certification4"] = ""
+        formatted_dict["external_testing_certification5"] = ""
+        formatted_dict["external_testing_certification6"] = ""
+        formatted_dict["ghs_classification_class1"] = ""
+        formatted_dict["ghs_classification_class2"] = ""
+        formatted_dict["ghs_classification_class3"] = ""
+        formatted_dict["california_proposition_65_compliance_type"] = ""
+        formatted_dict["california_proposition_65_chemical_names1"] = ""
+        formatted_dict["california_proposition_65_chemical_names2"] = ""
+        formatted_dict["california_proposition_65_chemical_names3"] = ""
+        formatted_dict["california_proposition_65_chemical_names4"] = ""
+        formatted_dict["california_proposition_65_chemical_names5"] = ""
+        formatted_dict["merchant_shipping_group_name"] = ""
+        formatted_dict["list_price"] = ""
+        formatted_dict["map_price"] = ""
+        formatted_dict["product_site_launch_date"] = ""
+        formatted_dict["merchant_release_date"] = ""
+        formatted_dict["condition_type"] = ""
+        formatted_dict["restock_date"] = ""
+        formatted_dict["fulfillment_latency"] = ""
+        formatted_dict["condition_note"] = ""
+        formatted_dict["product_tax_code"] = ""
+        formatted_dict["sale_price"] = ""
+        formatted_dict["sale_from_date"] = ""
+        formatted_dict["sale_end_date"] = ""
+        formatted_dict["item_package_quantity"] = ""
+        formatted_dict["max_aggregate_ship_quantity"] = ""
+        formatted_dict["offering_can_be_gift_messaged"] = ""
+        formatted_dict["offering_can_be_giftwrapped"] = ""
+        formatted_dict["is_discontinued_by_manufacturer"] = ""
+        formatted_dict["max_order_quantity"] = ""
+        formatted_dict["number_of_items"] = ""
+        formatted_dict["offering_start_date"] = ""
+        formatted_dict["offering_end_date"] = ""
 
         formatted_dicts.append(formatted_dict)
 
     print("Write mockup URLs to csv")
     keys = formatted_dicts[0].keys()
-    with open("image_urls.csv", "w", newline="") as output_file:
+    with open("amazon_data.csv", "w", newline="") as output_file:
         dict_writer = csv.DictWriter(output_file, keys)
         dict_writer.writeheader()
         dict_writer.writerows(formatted_dicts)

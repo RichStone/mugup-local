@@ -24,10 +24,11 @@ if __name__ == "__main__":
         slogan_dicts = [row for row in reader]
 
     valid_slogan_dicts = validate_input(slogan_dicts)
-    create_slogan_images(valid_slogan_dicts)
+    slogans_with_path = create_slogan_images(valid_slogan_dicts)
     asyncio.run(
         render_mockups.main(
             infolder=Path("finished"),
-            bucket="giftsondemand"
+            bucket="giftsondemand",
+            slogan_inputs=slogans_with_path
         )
     )
