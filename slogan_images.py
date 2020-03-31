@@ -20,17 +20,17 @@ def create_slogan_images(slogan_dicts):
             # doesn't accept `Path` obj
             if sys.platform == "win32":
                 font_map = {
-                    "abril": ["fonts\\AbrilFatface-Regular.otf", 155],
-                    "amatic": ["fonts\\AmaticSC-Regular.ttf", 215],
-                    "amatic-bold": ["fonts\\Amatic-Bold.ttf", 220],
-                    "helvetica": ["fonts\\Helvetica.otf", 170]
+                    "abril": ["resources\\AbrilFatface-Regular.otf", 155],
+                    "amatic": ["resources\\AmaticSC-Regular.ttf", 215],
+                    "amatic-bold": ["resources\\Amatic-Bold.ttf", 220],
+                    "helvetica": ["resources\\Helvetica.otf", 170]
                 }
             elif sys.platform == "darwin":
                 font_map = {
-                    "abril": ["fonts/AbrilFatface-Regular.otf", 155],
-                    "amatic": ["fonts/AmaticSC-Regular.ttf", 215],
-                    "amatic-bold": ["fonts/Amatic-Bold.ttf", 220],
-                    "helvetica": ["fonts/Helvetica.otf", 170]
+                    "abril": ["resources/AbrilFatface-Regular.otf", 155],
+                    "amatic": ["resources/AmaticSC-Regular.ttf", 215],
+                    "amatic-bold": ["resources/Amatic-Bold.ttf", 220],
+                    "helvetica": ["resources/Helvetica.otf", 170]
                 }
             font = ImageFont.truetype(*font_map[slogan["font"]])
 
