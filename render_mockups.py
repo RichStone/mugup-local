@@ -110,7 +110,13 @@ async def main(*, infolder, bucket, slogan_inputs):
             # Upload to s3
             s3_img_path = f"left_handle/{new_img_name}"
             with open(new_img_path, "rb") as f:
-                s3.upload_fileobj(f, bucket, s3_img_path)
+                s3.put_object(
+                    Bucket=bucket,
+                    Key=s3_img_path,
+                    Body=f,
+                    ContentType="image/png",
+                    ACL="public-read"
+                )
             aws_url = f"https://{bucket}.s3.amazonaws.com/{s3_img_path}"
             return aws_url
 
@@ -139,7 +145,13 @@ async def main(*, infolder, bucket, slogan_inputs):
             # Upload to s3
             s3_img_path = f"right_handle/{new_img_name}"
             with open(new_img_path, "rb") as f:
-                s3.upload_fileobj(f, bucket, s3_img_path)
+                s3.put_object(
+                    Bucket=bucket,
+                    Key=s3_img_path,
+                    Body=f,
+                    ContentType="image/png",
+                    ACL="public-read"
+                )
             aws_url = f"https://{bucket}.s3.amazonaws.com/{s3_img_path}"
             return aws_url
 

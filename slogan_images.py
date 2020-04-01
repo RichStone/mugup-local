@@ -3,57 +3,56 @@ import csv
 from datetime import date
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+from progressbar import progressbar
 from textwrap import wrap
 import sys
 
 
 def create_slogan_images(slogan_dicts):
-    def create_slogan_drawings(slogan_dicts):
-        slogans_with_path = []
-        for slogan in slogan_dicts:
-            MAX_W, MAX_H = 1000, 915
-            img = Image.new("RGB", (MAX_W, MAX_H), (255, 255, 255))
-            draw = ImageDraw.Draw(img)
+    print("Create slogan images")
+    slogans_with_path = []
+    for slogan in progressbar(slogan_dicts):
+        MAX_W, MAX_H = 1000, 915
+        img = Image.new("RGB", (MAX_W, MAX_H), (255, 255, 255))
+        draw = ImageDraw.Draw(img)
 
-            # font_map {corresponds to slogan.font, [path, size]}
-            # Windows conversion problem in font paths but PIL
-            # doesn't accept `Path` obj
-            if sys.platform == "win32":
-                font_map = {
-                    "abril": ["resources\\AbrilFatface-Regular.otf", 155],
-                    "amatic": ["resources\\AmaticSC-Regular.ttf", 215],
-                    "amatic-bold": ["resources\\Amatic-Bold.ttf", 220],
-                    "helvetica": ["resources\\Helvetica.otf", 170]
-                }
-            elif sys.platform == "darwin":
-                font_map = {
-                    "abril": ["resources/AbrilFatface-Regular.otf", 155],
-                    "amatic": ["resources/AmaticSC-Regular.ttf", 215],
-                    "amatic-bold": ["resources/Amatic-Bold.ttf", 220],
-                    "helvetica": ["resources/Helvetica.otf", 170]
-                }
-            font = ImageFont.truetype(*font_map[slogan["font"]])
+        # font_map {corresponds to slogan.font, [path, size]}
+        # Windows conversion problem in font paths but PIL
+        # doesn't accept `Path` obj
+        if sys.platform == "win32":
+            font_map = {
+                "abril": ["resources\\AbrilFatface-Regular.otf", 155],
+                "amatic": ["resources\\AmaticSC-Regular.ttf", 215],
+                "amatic-bold": ["resources\\Amatic-Bold.ttf", 220],
+                "helvetica": ["resources\\Helvetica.otf", 170]
+            }
+        elif sys.platform == "darwin":
+            font_map = {
+                "abril": ["resources/AbrilFatface-Regular.otf", 155],
+                "amatic": ["resources/AmaticSC-Regular.ttf", 215],
+                "amatic-bold": ["resources/Amatic-Bold.ttf", 220],
+                "helvetica": ["resources/Helvetica.otf", 170]
+            }
+        font = ImageFont.truetype(*font_map[slogan["font"]])
 
-            slogan_lines = slogan["wrapped"]
+        slogan_lines = slogan["wrapped"]
 
-            std_w, std_h = draw.textsize(slogan_lines[0], font=font)
-            text_h = len(slogan_lines) * std_h
-            starting_h = (MAX_H - text_h) / 2
-            current_h = starting_h - 60
+        std_w, std_h = draw.textsize(slogan_lines[0], font=font)
+        text_h = len(slogan_lines) * std_h
+        starting_h = (MAX_H - text_h) / 2
+        current_h = starting_h - 60
 
-            for line in slogan["wrapped"]:
-                w, h = draw.textsize(line, font=font)
-                draw.text(((MAX_W - w) / 2, current_h), line, font=font, fill=(0, 0, 0))
-                current_h += std_h
+        for line in slogan["wrapped"]:
+            w, h = draw.textsize(line, font=font)
+            draw.text(((MAX_W - w) / 2, current_h), line, font=font, fill=(0, 0, 0))
+            current_h += std_h
 
-            slogan_path = Path(f"finished/{slogan['name']}.png")
-            img.save(slogan_path)
-            slogan["slogan_path"] = slogan_path
-            slogans_with_path.append(slogan)
+        slogan_path = Path(f"finished/{slogan['name']}.png")
+        img.save(slogan_path)
+        slogan["slogan_path"] = slogan_path
+        slogans_with_path.append(slogan)
 
-        return slogans_with_path
-
-    return create_slogan_drawings(slogan_dicts)
+    return slogans_with_path
 
 
 def validate_input(slogan_dicts):
@@ -63,7 +62,8 @@ def validate_input(slogan_dicts):
     today = date.today().strftime("%Y%m%d")
     errors = []
     valid_slogans = []
-    for slogan in slogan_dicts:
+    print("Validate slogans")
+    for slogan in progressbar(slogan_dicts):
         slogan["slogan"] = clean_whitespace(slogan["slogan"])
         slogan["niche"] = clean_whitespace(slogan["niche"]).replace(" ", "-").lower()
         slogan["row"] = slogan_dicts.index(slogan) + 2
