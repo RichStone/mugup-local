@@ -2,7 +2,7 @@ import asyncio
 from asyncio_pool import AioPool
 import boto3
 import csv
-from datetime import date
+from datetime import date, datetime
 from glob import glob
 import httpx
 from io import BytesIO
@@ -965,9 +965,9 @@ async def main(*, infolder, bucket, slogan_inputs):
             "Stop Selling Date"
         ]
     ]
-
+    now_str = datetime.now().strftime("%Y%m%d%H%M")
     keys = formatted_dicts[0].keys()
-    with open("amazon_data.txt", "w", newline="") as output_file:
+    with open(f"amazon_data_{now_str}.txt", "w", newline="") as output_file:
         writer = csv.writer(output_file, delimiter="\t")
         writer.writerows(amazon_data)
         dict_writer = csv.DictWriter(output_file, keys, delimiter="\t")
