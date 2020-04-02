@@ -79,9 +79,9 @@ def validate_input(slogan_dicts):
 
         # Check font
         font_map = {
-            "abril": {"max_chars": 12, "max_lines": 4},
+            "abril": {"max_chars": 12, "max_lines": 5},
             "amatic": {"max_chars": 14, "max_lines": 4},
-            "amatic-bold": {"max_chars": 14, "max_lines": 5},
+            "amatic-bold": {"max_chars": 14, "max_lines": 4},
             "helvetica": {"max_chars": 12, "max_lines": 5}
         }
         try:
