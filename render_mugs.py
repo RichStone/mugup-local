@@ -48,7 +48,7 @@ def validate_input(slogan_dicts):
             "amatic": {"max_chars": 14, "max_lines": 4},
             "amatic-bold": {"max_chars": 14, "max_lines": 4},
             "montserrat": {"max_chars": 10, "max_lines": 6},
-            "nicklainey": {"max_chars": 10, "max_lines": 6},
+            "nickainley": {"max_chars": 10, "max_lines": 6},
             "playfair": {"max_chars": 10, "max_lines": 6}
         }
         try:
@@ -58,7 +58,7 @@ def validate_input(slogan_dicts):
             slogan["max_chars"] = limits_dict["max_chars"]
             slogan["max_lines"] = limits_dict["max_lines"]
         except KeyError:
-            error_obj["error"].append("Font not found. Options are abril, amatic, amatic-bold, helvetica.  Check for spaces")  # noqa: E501
+            error_obj["error"].append(f"Font not found. Options are {font_map.keys()}.  Check for spaces")  # noqa: E501
             slogan["max_chars"] = 14
             slogan["max_lines"] = 4
             try:
@@ -129,7 +129,7 @@ def render_mugs(valid_slogan_dicts):
                 "amatic": ["resources\\AmaticSC-Regular.ttf", 387],
                 "amatic-bold": ["resources\\Amatic-Bold.ttf", 387],
                 "montserrat": ["resources\\Montserrat-ExtraBold.otf", 210],
-                "nicklainey": ["resources\\Nickainley-Normal.otf", 200],
+                "nickainley": ["resources\\Nickainley-Normal.otf", 200],
                 "playfair": ["resources\\PlayfairDisplay-Black.otf", 215]
             }
         elif sys.platform == "darwin":
@@ -138,7 +138,7 @@ def render_mugs(valid_slogan_dicts):
                 "amatic": ["resources/AmaticSC-Regular.ttf", 387],
                 "amatic-bold": ["resources/Amatic-Bold.ttf", 387],
                 "montserrat": ["resources/Montserrat-ExtraBold.otf", 384],
-                "nicklainey": ["resources/Nickainley-Normal.otf", 200],
+                "nickainley": ["resources/Nickainley-Normal.otf", 200],
                 "playfair": ["resources/PlayfairDisplay-Black.otf", 215]
             }
         font = ImageFont.truetype(*font_map[slogan["font"]])
