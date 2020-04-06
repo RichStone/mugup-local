@@ -44,10 +44,12 @@ def validate_input(slogan_dicts):
 
         # Check font
         font_map = {
-            "abril": {"max_chars": 12, "max_lines": 5},
+            "abril": {"max_chars": 10, "max_lines": 6},
             "amatic": {"max_chars": 14, "max_lines": 4},
             "amatic-bold": {"max_chars": 14, "max_lines": 4},
-            "helvetica": {"max_chars": 12, "max_lines": 5}
+            "montserrat": {"max_chars": 10, "max_lines": 6},
+            "nicklainey": {"max_chars": 10, "max_lines": 6},
+            "playfair": {"max_chars": 10, "max_lines": 6}
         }
         try:
             if not slogan["font"]:
@@ -123,17 +125,21 @@ def render_mugs(valid_slogan_dicts):
         # doesn't accept `Path` obj
         if sys.platform == "win32":
             font_map = {
-                "abril": ["resources\\AbrilFatface-Regular.otf", 160],
-                "amatic": ["resources\\AmaticSC-Regular.ttf", 580],
-                "amatic-bold": ["resources\\Amatic-Bold.ttf", 580],
-                "helvetica": ["resources\\Helvetica.otf", 160]
+                "abril": ["resources\\AbrilFatface-Regular.otf", 220],
+                "amatic": ["resources\\AmaticSC-Regular.ttf", 387],
+                "amatic-bold": ["resources\\Amatic-Bold.ttf", 387],
+                "montserrat": ["resources\\Montserrat-ExtraBold.otf", 210],
+                "nicklainey": ["resources\\Nickainley-Normal.otf", 200],
+                "playfair": ["resources\\PlayfairDisplay-Black.otf", 215]
             }
         elif sys.platform == "darwin":
             font_map = {
-                "abril": ["resources/AbrilFatface-Regular.otf", 160],
+                "abril": ["resources/AbrilFatface-Regular.otf", 400],
                 "amatic": ["resources/AmaticSC-Regular.ttf", 387],
                 "amatic-bold": ["resources/Amatic-Bold.ttf", 387],
-                "helvetica": ["resources/Helvetica.otf", 640]
+                "montserrat": ["resources/Montserrat-ExtraBold.otf", 384],
+                "nicklainey": ["resources/Nickainley-Normal.otf", 200],
+                "playfair": ["resources/PlayfairDisplay-Black.otf", 215]
             }
         font = ImageFont.truetype(*font_map[slogan["font"]])
 
@@ -219,8 +225,11 @@ def render_mugs(valid_slogan_dicts):
     print("Create mug render images")
     slogans_with_path = []
     for slogan in progressbar(valid_slogan_dicts):
-        # STARTING_W, STARTING_H = 4900, 5100
-        STARTING_W, STARTING_H = 1634, 1700
+        # These fonts need a higher resolution
+        if slogan["font"] == "abril" or slogan["font"] == "montserrat":
+            STARTING_W, STARTING_H = 3000, 3122
+        else:
+            STARTING_W, STARTING_H = 1634, 1700
         slogan_img = draw_slogan(MAX_W=STARTING_W, MAX_H=STARTING_H)
         transformed_img = transform_slogan(slogan_img)
 
