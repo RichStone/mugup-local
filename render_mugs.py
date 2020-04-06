@@ -1,13 +1,109 @@
 import argparse
+import boto3
 import csv
+from datetime import date
 from math import ceil
 import numpy as np
 from pathlib import Path
 from pdb import set_trace
 from PIL import Image, ImageDraw, ImageFont
 from progressbar import progressbar
-from slogan_images import validate_input
+from shutil import rmtree
 import sys
+from textwrap import wrap
+
+
+def validate_input(slogan_dicts):
+    def clean_whitespace(string):
+        string_split = string.split()
+        return " ".join(string_split)
+    today = date.today().strftime("%Y%m%d")
+    errors = []
+    valid_slogans = []
+    print("Validate slogans")
+    for slogan in progressbar(slogan_dicts):
+        slogan["slogan"] = clean_whitespace(slogan["slogan"])
+        slogan["niche"] = clean_whitespace(slogan["niche"]).replace(" ", "-").lower()
+        slogan["row"] = slogan_dicts.index(slogan) + 2
+        slogan["name"] = f"{slogan['niche']}_{slogan_dicts.index(slogan)}_{today}"
+        error_obj = {
+            "row": int,
+            "error_count": int,
+            "error": ["error 1", "error n"]
+        }
+
+        error_obj["row"] = slogan["row"]
+        error_obj["error"] = []
+
+        # Check font
+        font_map = {
+            "abril": {"max_chars": 12, "max_lines": 5},
+            "amatic": {"max_chars": 14, "max_lines": 4},
+            "amatic-bold": {"max_chars": 14, "max_lines": 4},
+            "helvetica": {"max_chars": 12, "max_lines": 5}
+        }
+        try:
+            if not slogan["font"]:
+                slogan["font"] = "abril"
+            limits_dict = font_map[slogan["font"]]
+            slogan["max_chars"] = limits_dict["max_chars"]
+            slogan["max_lines"] = limits_dict["max_lines"]
+        except KeyError:
+            error_obj["error"].append("Font not found. Options are abril, amatic, amatic-bold, helvetica.  Check for spaces")  # noqa: E501
+            slogan["max_chars"] = 14
+            slogan["max_lines"] = 4
+            try:
+                error_obj["error_count"] += 1
+            except TypeError:
+                error_obj["error_count"] = 1
+
+        # Check word length < max_chars
+        individual_words = slogan["slogan"].split()
+        words_exceeding_char_limit = 0
+        for word in individual_words:
+            word_len = len(word)
+            if word_len > slogan["max_chars"]:
+                words_exceeding_char_limit += 1
+        if words_exceeding_char_limit > 0:
+            error_obj["error"].append(f"{words_exceeding_char_limit} word(s) exceed(s) character limit.  Must be less than chars {slogan['max_chars']} for this font")  # noqa:E501
+            try:
+                error_obj["error_count"] += 1
+            except TypeError:
+                error_obj["error_count"] = 1
+
+        # Check num of lines when wrapped
+        slogan["wrapped"] = wrap(slogan["slogan"], width=slogan["max_chars"])
+        num_of_lines = len(slogan["wrapped"])
+        if num_of_lines > slogan["max_lines"]:
+            error_obj["error"].append(f"Too many lines.  Make the slogan shorter")  # noqa:E501
+            try:
+                error_obj["error_count"] += 1
+            except TypeError:
+                error_obj["error_count"] = 1
+
+        # Append to `errors` list if any present
+        errors_present = type(error_obj["error_count"]) is int
+        if errors_present:
+            # convert errors to one string
+            error_str = ""
+            for idx, error in enumerate(error_obj["error"]):
+                idx += 1
+                new_str = f"#{idx} - {error} "
+                error_str += new_str
+            error_obj["error"] = error_str
+            errors.append(error_obj)
+        else:
+            valid_slogans.append(slogan)
+
+    # output csv with errors lists
+    if len(errors) > 0:
+        keys = errors[0].keys()
+        with open("slogan_errors.csv", "w") as error_output:
+            dict_writer = csv.DictWriter(error_output, keys)
+            dict_writer.writeheader()
+            dict_writer.writerows(errors)
+
+    return valid_slogans
 
 
 def render_mugs(slogan_dicts):
@@ -145,9 +241,9 @@ def render_mugs(slogan_dicts):
         new_mug_size = (new_mug_w, new_mug_h)
         small_mug_img = left_mug_img.copy().resize((new_mug_size), Image.ANTIALIAS)
 
-        # paste onto microwave_img
-        microwave_img = Image.open(Path("resources/microwave.png"))
-        microwave_img.paste(small_mug_img, (440, 45), small_mug_img)
+        # paste onto microwave_mug_img
+        microwave_mug_img = Image.open(Path("resources/microwave_mug.png"))
+        microwave_mug_img.paste(small_mug_img, (440, 45), small_mug_img)
 
         # paste onto size_example_img
         size_example_img = Image.open(Path("resources/size_example.png"))
@@ -165,9 +261,9 @@ def render_mugs(slogan_dicts):
         right_mug_img.save(right_mug_path)
         slogan["right_mug_path"] = right_mug_path
 
-        microwave_path = Path(render_path / f"{slogan['name']}_microwave.png")
-        microwave_img.save(microwave_path)
-        slogan["microwave_path"] = microwave_path
+        microwave_mug_path = Path(render_path / f"{slogan['name']}_microwave_mug.png")
+        microwave_mug_img.save(microwave_mug_path)
+        slogan["microwave_mug_path"] = microwave_mug_path
 
         size_example_path = Path(render_path / f"{slogan['name']}_size_example.png")
         size_example_img.save(size_example_path)
@@ -176,6 +272,53 @@ def render_mugs(slogan_dicts):
         slogans_with_path.append(slogan)
 
     return slogans_with_path
+
+
+def upload_mugs_to_s3(slogan_dicts):
+    print("Upload mug renders to S3")
+    AWS_ACCESS_KEY_ID = "AKIAINCEUCJHE3FHXWBQ"
+    AWS_SECRET_ACCESS_KEY = "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"
+    bucket = "giftsondemand"
+    today_str = str(date.today())
+
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    )
+
+    slogans_with_mug_urls = []
+    for slogan in progressbar(slogan_dicts):
+        try:
+            images_to_upload_paths = {
+                "left_mug": slogan["left_mug_path"],
+                "right_mug": slogan["right_mug_path"],
+                "microwave_mug": slogan["microwave_mug_path"],
+                "size_example": slogan["size_example_path"]
+            }
+            for key, local_img_path in images_to_upload_paths.items():
+                s3_img_path = f"{today_str}/{local_img_path.name}"
+                with open(local_img_path, "rb") as f:
+                    s3.put_object(
+                        Bucket=bucket,
+                        Key=s3_img_path,
+                        Body=f,
+                        ContentType="image/png",
+                        ACL="public-read"
+                    )
+                # Example finished AWS S3 URL
+                # https://giftsondemand.s3.amazonaws.com/2020-01-07/10_r.png
+                aws_url = f"https://{bucket}.s3.amazonaws.com/{s3_img_path}"
+                slogan[f"{key}_url"] = aws_url
+            slogans_with_mug_urls.append(slogan)
+            set_trace()
+        except Exception as e:
+            print(e)
+            set_trace()
+
+    rmtree(Path(f"render/"))
+
+    return slogans_with_mug_urls
 
 
 if __name__ == "__main__":
@@ -195,6 +338,7 @@ if __name__ == "__main__":
         slogan_dicts = [row for row in reader]
 
     Path("finished").mkdir(parents=True, exist_ok=True)
-    valid_slogan_dicts = validate_input(slogan_dicts[:1])
+    valid_slogan_dicts = validate_input(slogan_dicts)
     rendered_slogans = render_mugs(valid_slogan_dicts)
+    uploaded_mugs = upload_mugs_to_s3(rendered_slogans)
     set_trace()
