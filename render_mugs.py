@@ -17,11 +17,18 @@ def validate_input(slogan_dicts):
     def clean_whitespace(string):
         string_split = string.split()
         return " ".join(string_split)
+
+    print("Clean out blank lines")
+    slogan_dicts_no_blank_lines = []
+    for slogan in progressbar(slogan_dicts):
+        if slogan["slogan"] != "":
+            slogan_dicts_no_blank_lines.append(slogan)
+
     today = date.today().strftime("%Y%m%d")
     errors = []
     valid_slogans = []
     print("Validate slogans")
-    for slogan in progressbar(slogan_dicts):
+    for slogan in progressbar(slogan_dicts_no_blank_lines):
         slogan["slogan"] = clean_whitespace(slogan["slogan"])
         slogan["niche"] = clean_whitespace(slogan["niche"]).replace(" ", "-").lower()
         slogan["row"] = slogan_dicts.index(slogan) + 2
@@ -984,7 +991,6 @@ def create_amazon_upload_file(uploaded_mugs_dicts):
         dict_writer = csv.DictWriter(output_file, keys, delimiter="\t")
         dict_writer.writeheader()
         dict_writer.writerows(formatted_dicts)
-    set_trace()
 
 
 if __name__ == "__main__":
@@ -1008,4 +1014,3 @@ if __name__ == "__main__":
     rendered_slogan_dicts = render_mugs(valid_slogan_dicts)
     uploaded_mugs = upload_mugs_to_s3(rendered_slogan_dicts)
     create_amazon_upload_file(uploaded_mugs)
-    set_trace()
