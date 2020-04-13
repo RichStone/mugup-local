@@ -17,8 +17,8 @@ from sys import platform
 
 
 async def main(*, infolder, bucket, slogan_inputs):
-    AWS_ACCESS_KEY_ID = "AKIAINCEUCJHE3FHXWBQ"
-    AWS_SECRET_ACCESS_KEY = "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"
+    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
+    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
 
     def render_multiple_mockups(img_list):
         """
