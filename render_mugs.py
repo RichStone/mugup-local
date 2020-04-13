@@ -5,6 +5,7 @@ from datetime import date, datetime
 import logging
 from math import ceil
 import numpy as np
+import os
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from progressbar import progressbar
@@ -125,18 +126,18 @@ def render_mugs(valid_slogan_dicts):
         # doesn't accept `Path` obj
         if sys.platform == "win32":
             font_map = {
-                "abril": ["resources\\AbrilFatface-Regular.otf", 220],
-                "amatic": ["resources\\AmaticSC-Regular.ttf", 387],
-                "amatic-bold": ["resources\\Amatic-Bold.ttf", 387],
-                "montserrat": ["resources\\Montserrat-ExtraBold.otf", 210],
+                "abril": ["resources\\AbrilFatface-Regular.otf", 400],
+                "amatic": ["resources\\AmaticSC-Bold.ttf", 275],
+                "amatic-bold": ["resources\\Amatic-Bold.ttf", 275],
+                "montserrat": ["resources\\Montserrat-ExtraBold.otf", 384],
                 "nickainley": ["resources\\Nickainley-Normal.otf", 200],
                 "playfair": ["resources\\PlayfairDisplay-Black.otf", 215]
             }
         elif sys.platform == "darwin":
             font_map = {
                 "abril": ["resources/AbrilFatface-Regular.otf", 400],
-                "amatic": ["resources/AmaticSC-Regular.ttf", 387],
-                "amatic-bold": ["resources/Amatic-Bold.ttf", 387],
+                "amatic": ["resources/AmaticSC-Bold.ttf", 275],
+                "amatic-bold": ["resources/Amatic-Bold.ttf", 275],
                 "montserrat": ["resources/Montserrat-ExtraBold.otf", 384],
                 "nickainley": ["resources/Nickainley-Normal.otf", 200],
                 "playfair": ["resources/PlayfairDisplay-Black.otf", 215]
@@ -196,9 +197,9 @@ def render_mugs(valid_slogan_dicts):
 
         # Alpha (opacity) eqn found by fitting 3 points
         d, e, f = solve_quadratic_coeffs(
-            point_1=(0, 0.6),
-            point_2=(original_w / 4, 0.7),
-            point_3=(mid_x, 0.8)
+            point_1=(0, 0.8),
+            point_2=(original_w / 4, 0.9),
+            point_3=(mid_x, 0.95)
         )
 
         for x in range(original_w):  # cols
@@ -245,7 +246,7 @@ def render_mugs(valid_slogan_dicts):
 
             # paste onto left_mug_img
             left_mug_img = Image.open(Path("resources/mug_left_large.png"))
-            left_mug_img.paste(transformed_img, (630, 180), transformed_img)
+            left_mug_img.paste(transformed_img, (600, 180), transformed_img)
 
             # paste onto right_mug_img
             right_mug_img = Image.open(Path("resources/mug_right_large.png"))
@@ -298,8 +299,8 @@ def render_mugs(valid_slogan_dicts):
 
 def upload_mugs_to_s3(rendered_slogan_dicts):
     print("Upload mug renders to S3")
-    AWS_ACCESS_KEY_ID = "AKIAINCEUCJHE3FHXWBQ"
-    AWS_SECRET_ACCESS_KEY = "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"
+    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
+    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
     bucket = "giftsondemand"
     today_str = str(date.today())
 
