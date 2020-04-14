@@ -222,7 +222,6 @@ def render_mug(slogan):
 
         return new_img
 
-    print("Create mug render images")
     try:
         # These fonts need a higher resolution
         if slogan["font"] == "abril" or slogan["font"] == "montserrat":
@@ -293,8 +292,7 @@ def render_mug(slogan):
     return slogan_with_path
 
 
-def upload_mugs_to_s3(rendered_slogan_dicts):
-    print("Upload mug renders to S3")
+def upload_mug_to_s3(slogan):
     AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
     AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
     bucket = "giftsondemand"
@@ -306,38 +304,33 @@ def upload_mugs_to_s3(rendered_slogan_dicts):
         aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     )
 
-    slogans_with_mug_urls = []
-    for slogan in progressbar(rendered_slogan_dicts):
-        try:
-            images_to_upload_paths = {
-                "left_mug": slogan["left_mug_path"],
-                "right_mug": slogan["right_mug_path"],
-                "microwave_mug": slogan["microwave_mug_path"],
-                "size_example": slogan["size_example_path"]
-            }
-            for key, local_img_path in images_to_upload_paths.items():
-                s3_img_path = f"{today_str}/{local_img_path.name}"
-                with open(local_img_path, "rb") as f:
-                    s3.put_object(
-                        Bucket=bucket,
-                        Key=s3_img_path,
-                        Body=f,
-                        ContentType="image/png",
-                        ACL="public-read"
-                    )
-                # Example finished AWS S3 URL
-                # https://giftsondemand.s3.amazonaws.com/2020-01-07/10_r.png
-                aws_url = f"https://{bucket}.s3.amazonaws.com/{s3_img_path}"
-                slogan[f"{key}_url"] = aws_url
-            slogans_with_mug_urls.append(slogan)
-        except Exception as e:
-            full_error_message = f"{e}. Problem with {slogan['slogan']}"
-            logging.error(full_error_message)
-            continue
+    try:
+        images_to_upload_paths = {
+            "left_mug": slogan["left_mug_path"],
+            "right_mug": slogan["right_mug_path"],
+            "microwave_mug": slogan["microwave_mug_path"],
+            "size_example": slogan["size_example_path"]
+        }
+        for key, local_img_path in images_to_upload_paths.items():
+            s3_img_path = f"{today_str}/{local_img_path.name}"
+            with open(local_img_path, "rb") as f:
+                s3.put_object(
+                    Bucket=bucket,
+                    Key=s3_img_path,
+                    Body=f,
+                    ContentType="image/png",
+                    ACL="public-read"
+                )
+            # Example finished AWS S3 URL
+            # https://giftsondemand.s3.amazonaws.com/2020-01-07/10_r.png
+            aws_url = f"https://{bucket}.s3.amazonaws.com/{s3_img_path}"
+            slogan[f"{key}_url"] = aws_url
+        slogan_with_mug_urls = slogan
+    except Exception as e:
+        full_error_message = f"{e}. Problem with {slogan['slogan']}"
+        logging.error(full_error_message)
 
-    rmtree(Path(f"render/"))
-
-    return slogans_with_mug_urls
+    return slogan_with_mug_urls
 
 
 def create_amazon_upload_file(uploaded_mugs_dicts):
@@ -1030,11 +1023,12 @@ if __name__ == "__main__":
 
     Path("finished").mkdir(parents=True, exist_ok=True)
     valid_slogans = validate_input(slogan_dicts)
+
+    print("Render and upload mugs")
     uploaded_mugs = []  # list of dicts including mug urls
-    for slogan in valid_slogans:
+    for slogan in progressbar(valid_slogans):
         rendered_slogan = render_mug(slogan)
-        # uploaded_mug = upload_mugs_to_s3
-        # uploaded_mugs.append(uploaded_mug)
-    # rendered_slogan_dicts = render_mugs(valid_slogans)
-    # uploaded_mugs = upload_mugs_to_s3(rendered_slogan_dicts)
+        uploaded_mug = upload_mug_to_s3(rendered_slogan)
+        uploaded_mugs.append(uploaded_mug)
     create_amazon_upload_file(uploaded_mugs)
+    rmtree(Path(f"render/"))
