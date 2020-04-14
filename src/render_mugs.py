@@ -2,6 +2,7 @@ import argparse
 import boto3
 import csv
 from datetime import date, datetime
+import io
 import logging
 from math import ceil
 import numpy as np
@@ -9,7 +10,6 @@ import os
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from progressbar import progressbar
-from shutil import rmtree
 import sys
 from textwrap import wrap
 
@@ -243,10 +243,12 @@ def render_mug(slogan):
         # paste onto left_mug_img
         left_mug_img = Image.open(Path("resources/mug_left_large.png"))
         left_mug_img.paste(transformed_img, (600, 180), transformed_img)
+        slogan["left_mug"] = left_mug_img
 
         # paste onto right_mug_img
         right_mug_img = Image.open(Path("resources/mug_right_large.png"))
         right_mug_img.paste(transformed_img, (-20, 180), transformed_img)
+        slogan["right_mug"] = right_mug_img
 
         # resize left_mug_image
         mug_resize = 0.5
@@ -258,38 +260,19 @@ def render_mug(slogan):
         # paste onto microwave_mug_img
         microwave_mug_img = Image.open(Path("resources/microwave_mug.png"))
         microwave_mug_img.paste(small_mug_img, (440, 45), small_mug_img)
+        slogan["microwave_mug"] = microwave_mug_img
 
         # paste onto size_example_img
         size_example_img = Image.open(Path("resources/size_example.png"))
         size_example_img.paste(small_mug_img, (440, 45), small_mug_img)
+        slogan["size_example"] = size_example_img
 
-        # save
-        render_path = Path(f"render/")
-        Path(render_path).mkdir(parents=True, exist_ok=True)
-
-        left_mug_path = Path(render_path / f"{slogan['name']}_left.png")
-        left_mug_img.save(left_mug_path)
-        slogan["left_mug_path"] = left_mug_path
-
-        right_mug_path = Path(render_path / f"{slogan['name']}_right.png")
-        right_mug_img.save(right_mug_path)
-        slogan["right_mug_path"] = right_mug_path
-
-        microwave_mug_path = Path(
-            render_path / f"{slogan['name']}_microwave_mug.png")
-        microwave_mug_img.save(microwave_mug_path)
-        slogan["microwave_mug_path"] = microwave_mug_path
-
-        size_example_path = Path(render_path / f"{slogan['name']}_size_example.png")
-        size_example_img.save(size_example_path)
-        slogan["size_example_path"] = size_example_path
-
-        slogan_with_path = slogan
+        slogan_with_renders = slogan
     except Exception as e:
         error_msg = f"{e}. {slogan['slogan']}"
         logging.error(error_msg)
 
-    return slogan_with_path
+    return slogan_with_renders
 
 
 def upload_mug_to_s3(slogan):
@@ -305,26 +288,30 @@ def upload_mug_to_s3(slogan):
     )
 
     try:
-        images_to_upload_paths = {
-            "left_mug": slogan["left_mug_path"],
-            "right_mug": slogan["right_mug_path"],
-            "microwave_mug": slogan["microwave_mug_path"],
-            "size_example": slogan["size_example_path"]
+        images_to_upload_names = {
+            "left_mug": slogan["left_mug"],
+            "right_mug": slogan["right_mug"],
+            "microwave_mug": slogan["microwave_mug"],
+            "size_example": slogan["size_example"]
         }
-        for key, local_img_path in images_to_upload_paths.items():
-            s3_img_path = f"{today_str}/{local_img_path.name}"
-            with open(local_img_path, "rb") as f:
-                s3.put_object(
-                    Bucket=bucket,
-                    Key=s3_img_path,
-                    Body=f,
-                    ContentType="image/png",
-                    ACL="public-read"
-                )
+        for img_name, pil_img in images_to_upload_names.items():
+            in_mem_file = io.BytesIO()
+            # Figure out the naming here.  Then I'm done.
+            s3_img_path = f"{today_str}/{slogan['name']}_{img_name}.png"
+            pil_img.save(in_mem_file, format="PNG")
+            in_mem_file.seek(0)
+
+            s3.put_object(
+                Bucket=bucket,
+                Key=s3_img_path,
+                Body=in_mem_file,
+                ContentType="image/png",
+                ACL="public-read"
+            )
             # Example finished AWS S3 URL
             # https://giftsondemand.s3.amazonaws.com/2020-01-07/10_r.png
             aws_url = f"https://{bucket}.s3.amazonaws.com/{s3_img_path}"
-            slogan[f"{key}_url"] = aws_url
+            slogan[f"{img_name}_url"] = aws_url
         slogan_with_mug_urls = slogan
     except Exception as e:
         full_error_message = f"{e}. Problem with {slogan['slogan']}"
@@ -1019,9 +1006,8 @@ if __name__ == "__main__":
     input_file = args.input_file
     with open(input_file, encoding="utf-8-sig") as csv_file:
         reader = csv.DictReader(csv_file)
-        slogan_dicts = [row for row in reader][:1]
+        slogan_dicts = [row for row in reader]
 
-    Path("finished").mkdir(parents=True, exist_ok=True)
     valid_slogans = validate_input(slogan_dicts)
 
     print("Render and upload mugs")
@@ -1031,4 +1017,3 @@ if __name__ == "__main__":
         uploaded_mug = upload_mug_to_s3(rendered_slogan)
         uploaded_mugs.append(uploaded_mug)
     create_amazon_upload_file(uploaded_mugs)
-    rmtree(Path(f"render/"))
