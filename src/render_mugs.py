@@ -116,7 +116,7 @@ def validate_input(slogan_dicts):
     return valid_slogans
 
 
-def render_mugs(valid_slogan_dicts):
+def render_mug(slogan):
     def draw_slogan(MAX_W, MAX_H):
         img = Image.new("RGBA", (MAX_W, MAX_H), (255, 255, 255, 0))
         draw = ImageDraw.Draw(img)
@@ -223,77 +223,74 @@ def render_mugs(valid_slogan_dicts):
         return new_img
 
     print("Create mug render images")
-    slogans_with_path = []
-    for slogan in progressbar(valid_slogan_dicts):
-        try:
-            # These fonts need a higher resolution
-            if slogan["font"] == "abril" or slogan["font"] == "montserrat":
-                STARTING_W, STARTING_H = 3000, 3122
-            else:
-                STARTING_W, STARTING_H = 1634, 1700
-            slogan_img = draw_slogan(MAX_W=STARTING_W, MAX_H=STARTING_H)
-            transformed_img = transform_slogan(slogan_img)
+    try:
+        # These fonts need a higher resolution
+        if slogan["font"] == "abril" or slogan["font"] == "montserrat":
+            STARTING_W, STARTING_H = 3000, 3122
+        else:
+            STARTING_W, STARTING_H = 1634, 1700
+        slogan_img = draw_slogan(MAX_W=STARTING_W, MAX_H=STARTING_H)
+        transformed_img = transform_slogan(slogan_img)
 
-            # Calculate the resize by figuring out the final size.
-            FINAL_W = 1372
-            slogan_resize = FINAL_W / STARTING_W
-            size = (
-                int(ceil(STARTING_W * slogan_resize)),
-                int(ceil(STARTING_H * slogan_resize))
-            )
-            transformed_img = transformed_img.resize(size, Image.ANTIALIAS)
+        # Calculate the resize by figuring out the final size.
+        FINAL_W = 1372
+        slogan_resize = FINAL_W / STARTING_W
+        size = (
+            int(ceil(STARTING_W * slogan_resize)),
+            int(ceil(STARTING_H * slogan_resize))
+        )
+        transformed_img = transformed_img.resize(size, Image.ANTIALIAS)
 
-            # paste onto left_mug_img
-            left_mug_img = Image.open(Path("resources/mug_left_large.png"))
-            left_mug_img.paste(transformed_img, (600, 180), transformed_img)
+        # paste onto left_mug_img
+        left_mug_img = Image.open(Path("resources/mug_left_large.png"))
+        left_mug_img.paste(transformed_img, (600, 180), transformed_img)
 
-            # paste onto right_mug_img
-            right_mug_img = Image.open(Path("resources/mug_right_large.png"))
-            right_mug_img.paste(transformed_img, (-20, 180), transformed_img)
+        # paste onto right_mug_img
+        right_mug_img = Image.open(Path("resources/mug_right_large.png"))
+        right_mug_img.paste(transformed_img, (-20, 180), transformed_img)
 
-            # resize left_mug_image
-            mug_resize = 0.5
-            new_mug_w = int(ceil(left_mug_img.size[0] * mug_resize))
-            new_mug_h = int(ceil(left_mug_img.size[1] * mug_resize))
-            new_mug_size = (new_mug_w, new_mug_h)
-            small_mug_img = left_mug_img.copy().resize((new_mug_size), Image.ANTIALIAS)
+        # resize left_mug_image
+        mug_resize = 0.5
+        new_mug_w = int(ceil(left_mug_img.size[0] * mug_resize))
+        new_mug_h = int(ceil(left_mug_img.size[1] * mug_resize))
+        new_mug_size = (new_mug_w, new_mug_h)
+        small_mug_img = left_mug_img.copy().resize((new_mug_size), Image.ANTIALIAS)
 
-            # paste onto microwave_mug_img
-            microwave_mug_img = Image.open(Path("resources/microwave_mug.png"))
-            microwave_mug_img.paste(small_mug_img, (440, 45), small_mug_img)
+        # paste onto microwave_mug_img
+        microwave_mug_img = Image.open(Path("resources/microwave_mug.png"))
+        microwave_mug_img.paste(small_mug_img, (440, 45), small_mug_img)
 
-            # paste onto size_example_img
-            size_example_img = Image.open(Path("resources/size_example.png"))
-            size_example_img.paste(small_mug_img, (440, 45), small_mug_img)
+        # paste onto size_example_img
+        size_example_img = Image.open(Path("resources/size_example.png"))
+        size_example_img.paste(small_mug_img, (440, 45), small_mug_img)
 
-            # save
-            render_path = Path(f"render/")
-            Path(render_path).mkdir(parents=True, exist_ok=True)
+        # save
+        render_path = Path(f"render/")
+        Path(render_path).mkdir(parents=True, exist_ok=True)
 
-            left_mug_path = Path(render_path / f"{slogan['name']}_left.png")
-            left_mug_img.save(left_mug_path)
-            slogan["left_mug_path"] = left_mug_path
+        left_mug_path = Path(render_path / f"{slogan['name']}_left.png")
+        left_mug_img.save(left_mug_path)
+        slogan["left_mug_path"] = left_mug_path
 
-            right_mug_path = Path(render_path / f"{slogan['name']}_right.png")
-            right_mug_img.save(right_mug_path)
-            slogan["right_mug_path"] = right_mug_path
+        right_mug_path = Path(render_path / f"{slogan['name']}_right.png")
+        right_mug_img.save(right_mug_path)
+        slogan["right_mug_path"] = right_mug_path
 
-            microwave_mug_path = Path(
-                render_path / f"{slogan['name']}_microwave_mug.png")
-            microwave_mug_img.save(microwave_mug_path)
-            slogan["microwave_mug_path"] = microwave_mug_path
+        microwave_mug_path = Path(
+            render_path / f"{slogan['name']}_microwave_mug.png")
+        microwave_mug_img.save(microwave_mug_path)
+        slogan["microwave_mug_path"] = microwave_mug_path
 
-            size_example_path = Path(render_path / f"{slogan['name']}_size_example.png")
-            size_example_img.save(size_example_path)
-            slogan["size_example_path"] = size_example_path
+        size_example_path = Path(render_path / f"{slogan['name']}_size_example.png")
+        size_example_img.save(size_example_path)
+        slogan["size_example_path"] = size_example_path
 
-            slogans_with_path.append(slogan)
-        except Exception as e:
-            error_msg = f"{e}. {slogan['slogan']}"
-            logging.error(error_msg)
-            continue
+        slogan_with_path = slogan
+    except Exception as e:
+        error_msg = f"{e}. {slogan['slogan']}"
+        logging.error(error_msg)
 
-    return slogans_with_path
+    return slogan_with_path
 
 
 def upload_mugs_to_s3(rendered_slogan_dicts):
@@ -1029,10 +1026,15 @@ if __name__ == "__main__":
     input_file = args.input_file
     with open(input_file, encoding="utf-8-sig") as csv_file:
         reader = csv.DictReader(csv_file)
-        slogan_dicts = [row for row in reader]
+        slogan_dicts = [row for row in reader][:1]
 
     Path("finished").mkdir(parents=True, exist_ok=True)
     valid_slogans = validate_input(slogan_dicts)
-    rendered_slogan_dicts = render_mugs(valid_slogans)
-    uploaded_mugs = upload_mugs_to_s3(rendered_slogan_dicts)
+    uploaded_mugs = []  # list of dicts including mug urls
+    for slogan in valid_slogans:
+        rendered_slogan = render_mug(slogan)
+        # uploaded_mug = upload_mugs_to_s3
+        # uploaded_mugs.append(uploaded_mug)
+    # rendered_slogan_dicts = render_mugs(valid_slogans)
+    # uploaded_mugs = upload_mugs_to_s3(rendered_slogan_dicts)
     create_amazon_upload_file(uploaded_mugs)
