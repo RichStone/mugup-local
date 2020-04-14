@@ -160,7 +160,7 @@ def render_mugs(valid_slogan_dicts):
 
     def transform_slogan(original_img):
         def solve_quadratic_coeffs(point_1, point_2, point_3):
-            points = points = np.array([point_1, point_2, point_3])
+            points = np.array([point_1, point_2, point_3])
             x = points[:, 0]
             y = points[:, 1]
             z = np.polyfit(x, y, 2)
@@ -172,7 +172,7 @@ def render_mugs(valid_slogan_dicts):
         def plot_alpha_point(x, d, e, f):
             return d * x ** 2 + e * x + f
 
-        original_px = original_img.load()
+        original_pixel = original_img.load()
 
         # The new image will be tallest on the bottom and in
         # the middle of the line.  So new height should be the
@@ -203,20 +203,19 @@ def render_mugs(valid_slogan_dicts):
         )
 
         for x in range(original_w):  # cols
+            if x < mid_x:
+                alpha_value = int(ceil(plot_alpha_point(x, d, e, f) * 255))
+            else:
+                reflected_x = 2 * mid_x - x
+                alpha_value = int(ceil(plot_alpha_point(reflected_x, d, e, f) * 255))
             for y in range(original_h):  # rows
-                current_px = original_px[x, y]
-                if current_px != (255, 255, 255, 0) and current_px != (0, 0, 0, 0):
-                    if x < mid_x:
-                        alpha_value = int(ceil(plot_alpha_point(x, d, e, f) * 255))
-                    else:
-                        reflected_x = 2 * mid_x - x
-                        alpha_value = int(
-                            ceil(plot_alpha_point(reflected_x, d, e, f) * 255)
-                        )
-                    new_px = (current_px[0], current_px[1], current_px[2], alpha_value)
-                    new_px_y = plot_deflected_point(x, a, b, y)
+                current_pixel = original_pixel[x, y]
+                if current_pixel != (255, 255, 255, 0) and current_pixel != (0, 0, 0, 0):  # noqa:E501
+                    new_pixel = (current_pixel[0], current_pixel[1],
+                                 current_pixel[2], alpha_value)
+                    new_pixel_y = plot_deflected_point(x, a, b, y)
                     try:
-                        new_img.putpixel((x, new_px_y), new_px)
+                        new_img.putpixel((x, new_pixel_y), new_pixel)
                     except Exception as e:
                         logging.error(e)
                         continue
@@ -1033,7 +1032,7 @@ if __name__ == "__main__":
         slogan_dicts = [row for row in reader]
 
     Path("finished").mkdir(parents=True, exist_ok=True)
-    valid_slogan_dicts = validate_input(slogan_dicts)
-    rendered_slogan_dicts = render_mugs(valid_slogan_dicts)
+    valid_slogans = validate_input(slogan_dicts)
+    rendered_slogan_dicts = render_mugs(valid_slogans)
     uploaded_mugs = upload_mugs_to_s3(rendered_slogan_dicts)
     create_amazon_upload_file(uploaded_mugs)
