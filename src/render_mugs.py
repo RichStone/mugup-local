@@ -296,7 +296,6 @@ def upload_mug_to_s3(slogan):
         }
         for img_name, pil_img in images_to_upload_names.items():
             in_mem_file = io.BytesIO()
-            # Figure out the naming here.  Then I'm done.
             s3_img_path = f"{today_str}/{slogan['name']}_{img_name}.png"
             pil_img.save(in_mem_file, format="PNG")
             in_mem_file.seek(0)
@@ -981,13 +980,45 @@ def create_amazon_upload_file(uploaded_mugs_dicts):
         ]
     ]
     now_str = datetime.now().strftime("%Y%m%d%H%M")
+
+    # IO object must accept strings
+    csv_buffer = io.StringIO()
+
     keys = formatted_dicts[0].keys()
-    with open(f"amazon_data_{now_str}.txt", "w", newline="") as output_file:
-        writer = csv.writer(output_file, delimiter="\t")
-        writer.writerows(amazon_data)
-        dict_writer = csv.DictWriter(output_file, keys, delimiter="\t")
-        dict_writer.writeheader()
-        dict_writer.writerows(formatted_dicts)
+    writer = csv.writer(csv_buffer, delimiter="\t")
+    writer.writerows(amazon_data)
+    dict_writer = csv.DictWriter(csv_buffer, keys, delimiter="\t")
+    dict_writer.writeheader()
+    dict_writer.writerows(formatted_dicts)
+
+    # S3 put_object expects bytes obj
+    # https://stackoverflow.com/a/45700716/1723469
+    csv_bytes = io.BytesIO(csv_buffer.getvalue().encode())
+
+    today_str = str(date.today())
+
+    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
+    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
+    bucket = "giftsondemand"
+
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    )
+
+    s3_file_path = f"inventory_files/amazon_data_{now_str}.txt"
+
+    s3.put_object(
+        Bucket=bucket,
+        Key=s3_file_path,
+        Body=csv_bytes,
+        ContentType="text/plain",
+        ACL="public-read"
+    )
+
+    aws_url = f"https://{bucket}.s3.amazonaws.com/{s3_file_path}"
+    print(aws_url)
 
 
 if __name__ == "__main__":
@@ -1006,7 +1037,7 @@ if __name__ == "__main__":
     input_file = args.input_file
     with open(input_file, encoding="utf-8-sig") as csv_file:
         reader = csv.DictReader(csv_file)
-        slogan_dicts = [row for row in reader]
+        slogan_dicts = [row for row in reader][:1]
 
     valid_slogans = validate_input(slogan_dicts)
 
