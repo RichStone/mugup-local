@@ -14,6 +14,25 @@ import sys
 from textwrap import wrap
 
 
+def s3_put_obj(*, Bucket, Key, Body, ContentType, ACL):
+    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
+    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
+
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    )
+
+    s3.put_object(
+        Bucket=Bucket,
+        Key=Key,
+        Body=Body,
+        ContentType=ContentType,
+        ACL=ACL
+    )
+
+
 def validate_input(slogan_dicts):
     def clean_whitespace(string):
         string_split = string.split()
@@ -276,16 +295,8 @@ def render_mug(slogan):
 
 
 def upload_mug_to_s3(slogan):
-    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
-    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
-    bucket = "giftsondemand"
-    today_str = str(date.today())
 
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    )
+    today_str = str(date.today())
 
     try:
         images_to_upload_names = {
@@ -300,7 +311,8 @@ def upload_mug_to_s3(slogan):
             pil_img.save(in_mem_file, format="PNG")
             in_mem_file.seek(0)
 
-            s3.put_object(
+            bucket = "giftsondemand"
+            s3_put_obj(
                 Bucket=bucket,
                 Key=s3_img_path,
                 Body=in_mem_file,
@@ -997,19 +1009,10 @@ def create_amazon_upload_file(uploaded_mugs_dicts):
 
     today_str = str(date.today())
 
-    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
-    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
-    bucket = "giftsondemand"
-
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    )
-
     s3_file_path = f"inventory_files/amazon_data_{now_str}.txt"
 
-    s3.put_object(
+    bucket = "giftsondemand"
+    s3_put_obj(
         Bucket=bucket,
         Key=s3_file_path,
         Body=csv_bytes,
